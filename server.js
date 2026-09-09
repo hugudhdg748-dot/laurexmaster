@@ -37,10 +37,16 @@ app.post("/chat", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("OpenAI Error:", error);
+
+    console.error("========== OPENAI ERROR ==========");
+    console.error("Status:", error.status);
+    console.error("Code:", error.code);
+    console.error("Message:", error.message);
+    console.error("===================================");
 
     res.status(500).json({
-      error: "AI request failed"
+      error: "OpenAI request failed",
+      details: error.message || "Unknown OpenAI error"
     });
   }
 });

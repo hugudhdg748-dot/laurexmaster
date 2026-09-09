@@ -264,6 +264,7 @@ body.dark {
     flex: 1;
     line-height: 1.6;
     white-space: pre-wrap;
+    word-wrap: break-word;
 }
 
 .copy {
@@ -273,6 +274,47 @@ body.dark {
     color: #777;
     cursor: pointer;
     font-size: 12px;
+}
+
+.copy:hover {
+    color: #7c3aed;
+}
+
+/* THINKING */
+
+.thinking {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    height: 25px;
+}
+
+.dot {
+    width: 7px;
+    height: 7px;
+    background: #7c3aed;
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+}
+
+.dot:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.dot:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+@keyframes bounce {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.5;
+    }
+
+    30% {
+        transform: translateY(-5px);
+        opacity: 1;
+    }
 }
 
 /* INPUT */
@@ -327,6 +369,11 @@ textarea {
 
 .send:hover {
     background: #6d28d9;
+}
+
+.send:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .disclaimer {
@@ -406,11 +453,13 @@ textarea {
         </button>
 
         <div class="history">
+
             <div class="history-title">
                 RECENT CHATS
             </div>
 
             <div id="historyList"></div>
+
         </div>
 
         <div class="bottom-buttons">
@@ -458,7 +507,7 @@ textarea {
                 </h1>
 
                 <p>
-                    Your smart AI-style assistant.
+                    Your smart AI assistant.
                 </p>
 
                 <div class="suggestions">
@@ -502,7 +551,10 @@ textarea {
                     oninput="resizeInput()"
                 ></textarea>
 
-                <button class="send" onclick="sendMessage()">
+                <button
+                    class="send"
+                    id="sendButton"
+                    onclick="sendMessage()">
                     ↑
                 </button>
 
@@ -521,32 +573,66 @@ textarea {
 
 <script>
 
+/* =========================
+   LAUREX AI BACKEND
+========================= */
+
+const API_URL = "https://laurexmaster.onrender.com/chat";
+
+
+/* =========================
+   APP DATA
+========================= */
+
 let messages = [];
-let chats = JSON.parse(localStorage.getItem("laurexChats") || "[]");
+
+let chats =
+    JSON.parse(
+        localStorage.getItem("laurexChats") || "[]"
+    );
+
 
 const chat = document.getElementById("chat");
+
 const input = document.getElementById("input");
-const welcome = document.getElementById("welcome");
+
+const welcome =
+    document.getElementById("welcome");
+
+const sendButton =
+    document.getElementById("sendButton");
 
 
-// LOAD THEME
+/* =========================
+   LOAD THEME
+========================= */
 
-if (localStorage.getItem("laurexTheme") === "dark") {
+if (
+    localStorage.getItem("laurexTheme") === "dark"
+) {
     document.body.classList.add("dark");
 }
 
 
-// SEND MESSAGE
+/* =========================
+   SEND MESSAGE TO REAL AI
+========================= */
 
-function sendMessage() {
+async function sendMessage() {
 
     const text = input.value.trim();
 
     if (!text) return;
 
+
+    /* Hide welcome screen */
+
     if (messages.length === 0) {
         welcome.style.display = "none";
     }
+
+
+    /* Show user's message */
 
     addMessage("user", text);
 
@@ -555,191 +641,309 @@ function sendMessage() {
         content: text
     });
 
+
+    /* Clear input */
+
     input.value = "";
+
     resizeInput();
 
-    setTimeout(() => {
 
-        const answer = generateAnswer(text);
+    /* Disable button */
 
-        addMessage("assistant", answer);
+    sendButton.disabled = true;
+
+
+    /* Show thinking */
+
+    const thinkingMessage =
+        addThinkingMessage();
+
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        message: text
+                    })
+                }
+            );
+
+
+        /* Remove thinking */
+
+        if (thinkingMessage) {
+            thinkingMessage.remove();
+        }
+
+
+        /* Check server response */
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Server error: " +
+                response.status
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        /* Check AI reply */
+
+        if (!data.reply) {
+
+            throw new Error(
+                "No AI reply received"
+            );
+
+        }
+
+
+        /* Show AI response */
+
+        addMessage(
+            "assistant",
+            data.reply
+        );
+
+
+        /* Save message */
 
         messages.push({
             role: "assistant",
-            content: answer
+            content: data.reply
         });
+
+
+        /* Save chat */
 
         saveChat();
 
-    }, 600);
+
+    } catch (error) {
+
+        console.error(
+            "Laurex error:",
+            error
+        );
+
+
+        if (thinkingMessage) {
+            thinkingMessage.remove();
+        }
+
+
+        addMessage(
+            "assistant",
+            "⚠️ Sorry, I couldn't connect to Laurex AI right now.\n\nPlease check your internet connection and try again."
+        );
+
+    } finally {
+
+        sendButton.disabled = false;
+
+        input.focus();
+
+    }
 }
 
 
-// ADD MESSAGE
+/* =========================
+   THINKING ANIMATION
+========================= */
 
-function addMessage(role, text) {
+function addThinkingMessage() {
 
-    const wrapper = document.createElement("div");
+    const wrapper =
+        document.createElement("div");
+
     wrapper.className = "message";
 
-    const avatar = document.createElement("div");
+
+    const avatar =
+        document.createElement("div");
+
     avatar.className =
-        "avatar " +
-        (role === "user" ? "user-avatar" : "ai-avatar");
+        "avatar ai-avatar";
 
-    avatar.textContent =
-        role === "user" ? "👤" : "✦";
+    avatar.textContent = "✦";
 
-    const content = document.createElement("div");
-    content.className = "message-content";
 
-    content.textContent = text;
+    const content =
+        document.createElement("div");
+
+    content.className =
+        "message-content";
+
+
+    const thinking =
+        document.createElement("div");
+
+    thinking.className =
+        "thinking";
+
+
+    for (let i = 0; i < 3; i++) {
+
+        const dot =
+            document.createElement("div");
+
+        dot.className = "dot";
+
+        thinking.appendChild(dot);
+
+    }
+
+
+    content.appendChild(thinking);
 
     wrapper.appendChild(avatar);
+
     wrapper.appendChild(content);
-
-    if (role === "assistant") {
-
-        const copy = document.createElement("button");
-
-        copy.className = "copy";
-        copy.textContent = "📋 Copy";
-
-        copy.onclick = () => {
-
-            navigator.clipboard.writeText(text);
-
-            copy.textContent = "✓ Copied";
-
-            setTimeout(() => {
-                copy.textContent = "📋 Copy";
-            }, 1500);
-
-        };
-
-        content.appendChild(document.createElement("br"));
-        content.appendChild(copy);
-    }
 
     chat.appendChild(wrapper);
 
-    chat.scrollTop = chat.scrollHeight;
+
+    chat.scrollTop =
+        chat.scrollHeight;
+
+
+    return wrapper;
 }
 
 
-// DEMO AI
+/* =========================
+   ADD MESSAGE
+========================= */
 
-function generateAnswer(question) {
+function addMessage(role, text) {
 
-    const q = question.toLowerCase();
+    const wrapper =
+        document.createElement("div");
 
-    if (
-        q.includes("hello") ||
-        q.includes("hi") ||
-        q.includes("hey")
-    ) {
-        return "Hello! 👋 I'm Laurex. How can I help you today?";
+    wrapper.className = "message";
+
+
+    const avatar =
+        document.createElement("div");
+
+    avatar.className =
+        "avatar " +
+        (
+            role === "user"
+            ? "user-avatar"
+            : "ai-avatar"
+        );
+
+
+    avatar.textContent =
+        role === "user"
+        ? "👤"
+        : "✦";
+
+
+    const content =
+        document.createElement("div");
+
+    content.className =
+        "message-content";
+
+
+    content.textContent = text;
+
+
+    wrapper.appendChild(avatar);
+
+    wrapper.appendChild(content);
+
+
+    /* Copy button for AI */
+
+    if (role === "assistant") {
+
+        const copy =
+            document.createElement("button");
+
+        copy.className = "copy";
+
+        copy.textContent =
+            "📋 Copy";
+
+
+        copy.onclick = async () => {
+
+            try {
+
+                await navigator.clipboard
+                    .writeText(text);
+
+                copy.textContent =
+                    "✓ Copied";
+
+                setTimeout(() => {
+
+                    copy.textContent =
+                        "📋 Copy";
+
+                }, 1500);
+
+            } catch {
+
+                copy.textContent =
+                    "Copy failed";
+
+            }
+
+        };
+
+
+        content.appendChild(
+            document.createElement("br")
+        );
+
+        content.appendChild(copy);
     }
 
-    if (q.includes("photosynthesis")) {
 
-        return `Photosynthesis is the process by which green plants make their food.
+    chat.appendChild(wrapper);
 
-Plants use:
-☀️ Sunlight
-💧 Water
-🌿 Carbon dioxide
-
-They produce:
-🍃 Glucose (food)
-💨 Oxygen
-
-In simple words:
-
-Carbon dioxide + Water + Sunlight → Glucose + Oxygen`;
-    }
-
-    if (
-        q.includes("javascript") ||
-        q.includes("coding") ||
-        q.includes("programming")
-    ) {
-
-        return `Absolutely! 💻
-
-JavaScript is a programming language used to make websites interactive.
-
-For example:
-
-let name = "Laurex";
-
-console.log("Hello " + name);
-
-This prints:
-
-Hello Laurex
-
-You can learn JavaScript step by step by starting with variables, conditions, loops, functions and DOM manipulation.`;
-    }
-
-    if (
-        q.includes("study plan") ||
-        q.includes("study")
-    ) {
-
-        return `Here is a simple study plan:
-
-1. 📚 Study one topic for 45 minutes.
-2. ✍️ Take a 10-minute break.
-3. 📝 Practice questions for 30 minutes.
-4. 🔄 Review what you learned.
-5. 🌙 Get enough sleep.
-
-Try to study consistently rather than trying to finish everything at once.`;
-    }
-
-    if (
-        q.includes("what can you") ||
-        q.includes("help")
-    ) {
-
-        return `I can help with many things, such as:
-
-📚 School subjects
-💻 Programming
-🧮 Maths
-🔬 Science
-✍️ Writing
-🌐 Websites
-🎯 Study planning
-💡 Project ideas
-
-This version of Laurex is currently a demo. A real AI model can be connected through a secure backend later.`;
-    }
-
-    return `I'm Laurex ✦
-
-I received your message:
-
-"${question}"
-
-This version is the W3Schools frontend version of Laurex. Its chat system is working, but the AI responses are currently built into the app.
-
-To make Laurex generate real AI answers like ChatGPT, we need to connect it to an AI model through a secure backend.`;
+    chat.scrollTop =
+        chat.scrollHeight;
 }
 
 
-// SUGGESTIONS
+/* =========================
+   SUGGESTIONS
+========================= */
 
 function useSuggestion(text) {
 
     input.value = text;
 
+    resizeInput();
+
     sendMessage();
 }
 
 
-// NEW CHAT
+/* =========================
+   NEW CHAT
+========================= */
 
 function newChat() {
 
@@ -753,175 +957,280 @@ function newChat() {
 
     input.value = "";
 
+    resizeInput();
+
     toggleMenu(false);
+
+    input.focus();
 }
 
 
-// SAVE CHAT
+/* =========================
+   SAVE CHAT
+========================= */
 
 function saveChat() {
 
-    if (messages.length === 0) return;
+    if (messages.length === 0) {
+        return;
+    }
+
 
     const firstUserMessage =
-        messages.find(m => m.role === "user");
+        messages.find(
+            m => m.role === "user"
+        );
+
 
     const title =
         firstUserMessage
-        ? firstUserMessage.content.substring(0, 35)
+        ? firstUserMessage.content
+            .substring(0, 35)
         : "New Chat";
 
-    const existing = chats[0];
 
     const data = {
+
         title: title,
-        messages: messages,
+
+        messages:
+            JSON.parse(
+                JSON.stringify(messages)
+            ),
+
         date: Date.now()
+
     };
 
-    if (existing && existing.messages === messages) {
-        chats[0] = data;
-    } else {
-        chats.unshift(data);
-    }
 
-    chats = chats.slice(0, 20);
+    chats.unshift(data);
+
+
+    /* Keep maximum 20 chats */
+
+    chats =
+        chats.slice(0, 20);
+
 
     localStorage.setItem(
         "laurexChats",
         JSON.stringify(chats)
     );
 
+
     renderHistory();
 }
 
 
-// HISTORY
+/* =========================
+   HISTORY
+========================= */
 
 function renderHistory() {
 
     const list =
-        document.getElementById("historyList");
+        document.getElementById(
+            "historyList"
+        );
+
 
     list.innerHTML = "";
 
-    chats.forEach((item, index) => {
 
-        const div = document.createElement("div");
+    chats.forEach(
+        (item, index) => {
 
-        div.className = "history-item";
+            const div =
+                document.createElement("div");
 
-        div.textContent = item.title;
 
-        div.onclick = () => loadChat(index);
+            div.className =
+                "history-item";
 
-        list.appendChild(div);
 
-    });
+            div.textContent =
+                item.title;
+
+
+            div.onclick =
+                () => loadChat(index);
+
+
+            list.appendChild(div);
+
+        }
+    );
 }
 
 
-// LOAD CHAT
+/* =========================
+   LOAD CHAT
+========================= */
 
 function loadChat(index) {
 
-    const selected = chats[index];
+    const selected =
+        chats[index];
 
-    if (!selected) return;
 
-    messages = selected.messages;
+    if (!selected) {
+        return;
+    }
+
+
+    messages =
+        JSON.parse(
+            JSON.stringify(
+                selected.messages
+            )
+        );
+
 
     chat.innerHTML = "";
 
-    messages.forEach(message => {
 
-        addMessage(
-            message.role,
-            message.content
-        );
+    messages.forEach(
+        message => {
 
-    });
+            addMessage(
+                message.role,
+                message.content
+            );
+
+        }
+    );
+
 
     toggleMenu(false);
 }
 
 
-// CLEAR HISTORY
+/* =========================
+   CLEAR HISTORY
+========================= */
 
 function clearHistory() {
 
-    if (!confirm("Delete all saved chats?")) {
+    if (
+        !confirm(
+            "Delete all saved chats?"
+        )
+    ) {
         return;
     }
 
+
     chats = [];
 
-    localStorage.removeItem("laurexChats");
+
+    localStorage.removeItem(
+        "laurexChats"
+    );
+
 
     renderHistory();
+
 
     newChat();
 }
 
 
-// THEME
+/* =========================
+   DARK MODE
+========================= */
 
 function toggleTheme() {
 
-    document.body.classList.toggle("dark");
+    document.body.classList.toggle(
+        "dark"
+    );
+
 
     localStorage.setItem(
+
         "laurexTheme",
-        document.body.classList.contains("dark")
-            ? "dark"
-            : "light"
+
+        document.body.classList.contains(
+            "dark"
+        )
+        ? "dark"
+        : "light"
+
     );
 }
 
 
-// MOBILE MENU
+/* =========================
+   MOBILE MENU
+========================= */
 
 function toggleMenu(force) {
 
     const sidebar =
-        document.getElementById("sidebar");
+        document.getElementById(
+            "sidebar"
+        );
+
 
     if (force === false) {
-        sidebar.classList.remove("open");
+
+        sidebar.classList.remove(
+            "open"
+        );
+
         return;
     }
 
-    sidebar.classList.toggle("open");
+
+    sidebar.classList.toggle(
+        "open"
+    );
 }
 
 
-// ENTER KEY
+/* =========================
+   ENTER KEY
+========================= */
 
 function handleKey(event) {
 
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (
+        event.key === "Enter" &&
+        !event.shiftKey
+    ) {
 
         event.preventDefault();
 
         sendMessage();
+
     }
 }
 
 
-// AUTO RESIZE
+/* =========================
+   AUTO RESIZE
+========================= */
 
 function resizeInput() {
 
     input.style.height = "auto";
 
+
     input.style.height =
-        Math.min(input.scrollHeight, 150) + "px";
+        Math.min(
+            input.scrollHeight,
+            150
+        ) + "px";
 }
 
 
-// START
+/* =========================
+   START APP
+========================= */
 
 renderHistory();
+
+input.focus();
 
 </script>
 

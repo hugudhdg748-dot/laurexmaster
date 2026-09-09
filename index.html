@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Laurex AI</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background: #ffffff;
+    color: #202123;
+    height: 100vh;
+    overflow: hidden;
+}
+
+body.dark {
+    background: #171717;
+    color: #eeeeee;
+}
+
+.app {
+    display: flex;
+    height: 100vh;
+}
+
+/* SIDEBAR */
+
+.sidebar {
+    width: 260px;
+    background: #f7f7f8;
+    border-right: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+}
+
+.dark .sidebar {
+    background: #202123;
+    border-color: #333;
+}
+
+.logo {
+    font-size: 25px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    padding: 10px;
+}
+
+.logo span {
+    color: #7c3aed;
+}
+
+.new-chat {
+    border: 1px solid #ccc;
+    background: white;
+    border-radius: 10px;
+    padding: 12px;
+    cursor: pointer;
+    font-size: 15px;
+    margin-bottom: 15px;
+}
+
+.dark .new-chat {
+    background: #2b2b2b;
+    color: white;
+    border-color: #444;
+}
+
+.new-chat:hover {
+    background: #eeeeee;
+}
+
+.dark .new-chat:hover {
+    background: #333;
+}
+
+.history {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.history-title {
+    font-size: 12px;
+    color: #777;
+    margin: 10px;
+}
+
+.history-item {
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.history-item:hover {
+    background: #e5e5e5;
+}
+
+.dark .history-item:hover {
+    background: #303030;
+}
+
+.bottom-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bottom-buttons button {
+    border: none;
+    background: transparent;
+    padding: 10px;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 8px;
+    color: inherit;
+}
+
+.bottom-buttons button:hover {
+    background: #e5e5e5;
+}
+
+.dark .bottom-buttons button:hover {
+    background: #303030;
+}
+
+/* MAIN */
+
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.topbar {
+    height: 60px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px;
+}
+
+.dark .topbar {
+    border-color: #333;
+}
+
+.menu {
+    display: none;
+    font-size: 25px;
+    background: none;
+    border: none;
+    color: inherit;
+}
+
+.top-title {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.theme {
+    border: none;
+    background: transparent;
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 25px;
+}
+
+.welcome {
+    max-width: 750px;
+    margin: 50px auto;
+    text-align: center;
+}
+
+.welcome h1 {
+    font-size: 38px;
+    margin-bottom: 12px;
+}
+
+.welcome h1 span {
+    color: #7c3aed;
+}
+
+.welcome p {
+    color: #777;
+    margin-bottom: 30px;
+}
+
+.suggestions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.suggestion {
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 15px;
+    cursor: pointer;
+    background: white;
+    text-align: left;
+}
+
+.dark .suggestion {
+    background: #222;
+    border-color: #444;
+    color: white;
+}
+
+.suggestion:hover {
+    background: #f1f1f1;
+}
+
+.dark .suggestion:hover {
+    background: #303030;
+}
+
+/* MESSAGES */
+
+.message {
+    max-width: 850px;
+    margin: 0 auto 20px auto;
+    display: flex;
+    gap: 12px;
+}
+
+.avatar {
+    width: 35px;
+    height: 35px;
+    min-width: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.user-avatar {
+    background: #ddd;
+}
+
+.ai-avatar {
+    background: #7c3aed;
+    color: white;
+}
+
+.message-content {
+    flex: 1;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.copy {
+    margin-top: 8px;
+    border: none;
+    background: transparent;
+    color: #777;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+/* INPUT */
+
+.input-area {
+    padding: 15px;
+    border-top: 1px solid #ddd;
+}
+
+.dark .input-area {
+    border-color: #333;
+}
+
+.input-box {
+    max-width: 850px;
+    margin: auto;
+    border: 1px solid #ccc;
+    border-radius: 15px;
+    display: flex;
+    align-items: flex-end;
+    padding: 8px;
+    background: white;
+}
+
+.dark .input-box {
+    background: #222;
+    border-color: #444;
+}
+
+textarea {
+    flex: 1;
+    resize: none;
+    border: none;
+    outline: none;
+    padding: 10px;
+    font-size: 16px;
+    background: transparent;
+    color: inherit;
+    max-height: 150px;
+}
+
+.send {
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 10px;
+    background: #7c3aed;
+    color: white;
+    cursor: pointer;
+    font-size: 20px;
+}
+
+.send:hover {
+    background: #6d28d9;
+}
+
+.disclaimer {
+    text-align: center;
+    color: #888;
+    font-size: 11px;
+    margin-top: 8px;
+}
+
+/* MOBILE */
+
+@media (max-width: 700px) {
+
+    .sidebar {
+        position: fixed;
+        left: -270px;
+        top: 0;
+        bottom: 0;
+        z-index: 10;
+        transition: 0.25s;
+    }
+
+    .sidebar.open {
+        left: 0;
+    }
+
+    .menu {
+        display: block;
+    }
+
+    .top-title {
+        margin-right: auto;
+        margin-left: 10px;
+    }
+
+    .chat {
+        padding: 15px;
+    }
+
+    .welcome {
+        margin: 35px auto;
+    }
+
+    .welcome h1 {
+        font-size: 30px;
+    }
+
+    .suggestions {
+        grid-template-columns: 1fr;
+    }
+
+    .message {
+        margin-bottom: 18px;
+    }
+
+    .input-area {
+        padding: 8px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar" id="sidebar">
+
+        <div class="logo">
+            ✦ <span>Laurex</span>
+        </div>
+
+        <button class="new-chat" onclick="newChat()">
+            ＋ New Chat
+        </button>
+
+        <div class="history">
+            <div class="history-title">
+                RECENT CHATS
+            </div>
+
+            <div id="historyList"></div>
+        </div>
+
+        <div class="bottom-buttons">
+
+            <button onclick="toggleTheme()">
+                🌙 Dark Mode
+            </button>
+
+            <button onclick="clearHistory()">
+                🗑 Clear History
+            </button>
+
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN -->
+
+    <main class="main">
+
+        <header class="topbar">
+
+            <button class="menu" onclick="toggleMenu()">
+                ☰
+            </button>
+
+            <div class="top-title">
+                Laurex AI
+            </div>
+
+            <button class="theme" onclick="toggleTheme()">
+                🌓
+            </button>
+
+        </header>
+
+
+        <section class="chat" id="chat">
+
+            <div class="welcome" id="welcome">
+
+                <h1>
+                    Hello, I'm <span>Laurex</span> 👋
+                </h1>
+
+                <p>
+                    Your smart AI-style assistant.
+                </p>
+
+                <div class="suggestions">
+
+                    <div class="suggestion"
+                         onclick="useSuggestion('Explain photosynthesis simply')">
+                        🌱 Explain photosynthesis simply
+                    </div>
+
+                    <div class="suggestion"
+                         onclick="useSuggestion('Help me learn JavaScript')">
+                        💻 Help me learn JavaScript
+                    </div>
+
+                    <div class="suggestion"
+                         onclick="useSuggestion('Give me a study plan')">
+                        📚 Give me a study plan
+                    </div>
+
+                    <div class="suggestion"
+                         onclick="useSuggestion('What can you help me with?')">
+                        ✨ What can you help me with?
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <div class="input-area">
+
+            <div class="input-box">
+
+                <textarea
+                    id="input"
+                    rows="1"
+                    placeholder="Message Laurex..."
+                    onkeydown="handleKey(event)"
+                    oninput="resizeInput()"
+                ></textarea>
+
+                <button class="send" onclick="sendMessage()">
+                    ↑
+                </button>
+
+            </div>
+
+            <div class="disclaimer">
+                Laurex can make mistakes. Check important information.
+            </div>
+
+        </div>
+
+    </main>
+
+</div>
+
+
+<script>
+
+let messages = [];
+let chats = JSON.parse(localStorage.getItem("laurexChats") || "[]");
+
+const chat = document.getElementById("chat");
+const input = document.getElementById("input");
+const welcome = document.getElementById("welcome");
+
+
+// LOAD THEME
+
+if (localStorage.getItem("laurexTheme") === "dark") {
+    document.body.classList.add("dark");
+}
+
+
+// SEND MESSAGE
+
+function sendMessage() {
+
+    const text = input.value.trim();
+
+    if (!text) return;
+
+    if (messages.length === 0) {
+        welcome.style.display = "none";
+    }
+
+    addMessage("user", text);
+
+    messages.push({
+        role: "user",
+        content: text
+    });
+
+    input.value = "";
+    resizeInput();
+
+    setTimeout(() => {
+
+        const answer = generateAnswer(text);
+
+        addMessage("assistant", answer);
+
+        messages.push({
+            role: "assistant",
+            content: answer
+        });
+
+        saveChat();
+
+    }, 600);
+}
+
+
+// ADD MESSAGE
+
+function addMessage(role, text) {
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "message";
+
+    const avatar = document.createElement("div");
+    avatar.className =
+        "avatar " +
+        (role === "user" ? "user-avatar" : "ai-avatar");
+
+    avatar.textContent =
+        role === "user" ? "👤" : "✦";
+
+    const content = document.createElement("div");
+    content.className = "message-content";
+
+    content.textContent = text;
+
+    wrapper.appendChild(avatar);
+    wrapper.appendChild(content);
+
+    if (role === "assistant") {
+
+        const copy = document.createElement("button");
+
+        copy.className = "copy";
+        copy.textContent = "📋 Copy";
+
+        copy.onclick = () => {
+
+            navigator.clipboard.writeText(text);
+
+            copy.textContent = "✓ Copied";
+
+            setTimeout(() => {
+                copy.textContent = "📋 Copy";
+            }, 1500);
+
+        };
+
+        content.appendChild(document.createElement("br"));
+        content.appendChild(copy);
+    }
+
+    chat.appendChild(wrapper);
+
+    chat.scrollTop = chat.scrollHeight;
+}
+
+
+// DEMO AI
+
+function generateAnswer(question) {
+
+    const q = question.toLowerCase();
+
+    if (
+        q.includes("hello") ||
+        q.includes("hi") ||
+        q.includes("hey")
+    ) {
+        return "Hello! 👋 I'm Laurex. How can I help you today?";
+    }
+
+    if (q.includes("photosynthesis")) {
+
+        return `Photosynthesis is the process by which green plants make their food.
+
+Plants use:
+☀️ Sunlight
+💧 Water
+🌿 Carbon dioxide
+
+They produce:
+🍃 Glucose (food)
+💨 Oxygen
+
+In simple words:
+
+Carbon dioxide + Water + Sunlight → Glucose + Oxygen`;
+    }
+
+    if (
+        q.includes("javascript") ||
+        q.includes("coding") ||
+        q.includes("programming")
+    ) {
+
+        return `Absolutely! 💻
+
+JavaScript is a programming language used to make websites interactive.
+
+For example:
+
+let name = "Laurex";
+
+console.log("Hello " + name);
+
+This prints:
+
+Hello Laurex
+
+You can learn JavaScript step by step by starting with variables, conditions, loops, functions and DOM manipulation.`;
+    }
+
+    if (
+        q.includes("study plan") ||
+        q.includes("study")
+    ) {
+
+        return `Here is a simple study plan:
+
+1. 📚 Study one topic for 45 minutes.
+2. ✍️ Take a 10-minute break.
+3. 📝 Practice questions for 30 minutes.
+4. 🔄 Review what you learned.
+5. 🌙 Get enough sleep.
+
+Try to study consistently rather than trying to finish everything at once.`;
+    }
+
+    if (
+        q.includes("what can you") ||
+        q.includes("help")
+    ) {
+
+        return `I can help with many things, such as:
+
+📚 School subjects
+💻 Programming
+🧮 Maths
+🔬 Science
+✍️ Writing
+🌐 Websites
+🎯 Study planning
+💡 Project ideas
+
+This version of Laurex is currently a demo. A real AI model can be connected through a secure backend later.`;
+    }
+
+    return `I'm Laurex ✦
+
+I received your message:
+
+"${question}"
+
+This version is the W3Schools frontend version of Laurex. Its chat system is working, but the AI responses are currently built into the app.
+
+To make Laurex generate real AI answers like ChatGPT, we need to connect it to an AI model through a secure backend.`;
+}
+
+
+// SUGGESTIONS
+
+function useSuggestion(text) {
+
+    input.value = text;
+
+    sendMessage();
+}
+
+
+// NEW CHAT
+
+function newChat() {
+
+    messages = [];
+
+    chat.innerHTML = "";
+
+    chat.appendChild(welcome);
+
+    welcome.style.display = "block";
+
+    input.value = "";
+
+    toggleMenu(false);
+}
+
+
+// SAVE CHAT
+
+function saveChat() {
+
+    if (messages.length === 0) return;
+
+    const firstUserMessage =
+        messages.find(m => m.role === "user");
+
+    const title =
+        firstUserMessage
+        ? firstUserMessage.content.substring(0, 35)
+        : "New Chat";
+
+    const existing = chats[0];
+
+    const data = {
+        title: title,
+        messages: messages,
+        date: Date.now()
+    };
+
+    if (existing && existing.messages === messages) {
+        chats[0] = data;
+    } else {
+        chats.unshift(data);
+    }
+
+    chats = chats.slice(0, 20);
+
+    localStorage.setItem(
+        "laurexChats",
+        JSON.stringify(chats)
+    );
+
+    renderHistory();
+}
+
+
+// HISTORY
+
+function renderHistory() {
+
+    const list =
+        document.getElementById("historyList");
+
+    list.innerHTML = "";
+
+    chats.forEach((item, index) => {
+
+        const div = document.createElement("div");
+
+        div.className = "history-item";
+
+        div.textContent = item.title;
+
+        div.onclick = () => loadChat(index);
+
+        list.appendChild(div);
+
+    });
+}
+
+
+// LOAD CHAT
+
+function loadChat(index) {
+
+    const selected = chats[index];
+
+    if (!selected) return;
+
+    messages = selected.messages;
+
+    chat.innerHTML = "";
+
+    messages.forEach(message => {
+
+        addMessage(
+            message.role,
+            message.content
+        );
+
+    });
+
+    toggleMenu(false);
+}
+
+
+// CLEAR HISTORY
+
+function clearHistory() {
+
+    if (!confirm("Delete all saved chats?")) {
+        return;
+    }
+
+    chats = [];
+
+    localStorage.removeItem("laurexChats");
+
+    renderHistory();
+
+    newChat();
+}
+
+
+// THEME
+
+function toggleTheme() {
+
+    document.body.classList.toggle("dark");
+
+    localStorage.setItem(
+        "laurexTheme",
+        document.body.classList.contains("dark")
+            ? "dark"
+            : "light"
+    );
+}
+
+
+// MOBILE MENU
+
+function toggleMenu(force) {
+
+    const sidebar =
+        document.getElementById("sidebar");
+
+    if (force === false) {
+        sidebar.classList.remove("open");
+        return;
+    }
+
+    sidebar.classList.toggle("open");
+}
+
+
+// ENTER KEY
+
+function handleKey(event) {
+
+    if (event.key === "Enter" && !event.shiftKey) {
+
+        event.preventDefault();
+
+        sendMessage();
+    }
+}
+
+
+// AUTO RESIZE
+
+function resizeInput() {
+
+    input.style.height = "auto";
+
+    input.style.height =
+        Math.min(input.scrollHeight, 150) + "px";
+}
+
+
+// START
+
+renderHistory();
+
+</script>
+
+</body>
+</html>

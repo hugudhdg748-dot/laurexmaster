@@ -26,8 +26,9 @@ app.post("/chat", async (req, res) => {
     }
 
     const response = await client.responses.create({
-      model: "gpt-5.6",
-      instructions: "You are Laurex AI, a helpful and friendly chatbot.",
+      model: "gpt-5-mini",
+      instructions:
+        "You are Laurex AI, a helpful, friendly and educational AI assistant.",
       input: message
     });
 
@@ -36,7 +37,7 @@ app.post("/chat", async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
+    console.error("OpenAI Error:", error);
 
     res.status(500).json({
       error: "AI request failed"
